@@ -16,7 +16,7 @@ def game_server():
     # add server socket object to the list of readable connections
     SOCKET_LIST.append(server_socket)
  
-    print "JokenPo! Choose among stone, paper and scissors!" + str(PORT)
+    print "Jan-ken-Po!\nChoose among stone, paper and scissors:" + str(PORT)
  
     while 1:
 
@@ -30,13 +30,17 @@ def game_server():
             if sock == server_socket:
                 sockfd, addr = server_socket.accept()
                 SOCKET_LIST.append(sockfd)
-                player_number = find_position(sockfd, SOCKET_LIST)
+                player_number = len(SOCKET_LIST)-1
                 players_dict[sockfd] = player_number
-                print "Player %s connected" % (player_number)
                 print players_dict
                 print SOCKET_LIST
-                 
-                broadcast(server_socket, sockfd, "Player %s entered our chatting room\n" % (player_number))
+                
+                if(len(players_dict) < 3):
+                    print "Player %s connected" % (player_number)
+                    broadcast(server_socket, sockfd, "Player %s entered our chatting room\n" % (player_number))
+                else:
+                    print "Spectator %s connected" % (4-player_number)
+                    broadcast(server_socket, sockfd, "Spectator %s entered our chatting room\n" % (4-player_number))
              
             # a message from a client, not a new connection
             else:
@@ -91,6 +95,18 @@ def find_position(item, items_list):
 if __name__ == "__main__":
 
     sys.exit(game_server())
+
+
+options = {
+    'pedra' : {
+        'pedra' : 'empate',
+        'papel' : '' 
+    }
+}
+
+result = [[0, 2, 1], [2, 0, 3], [1, 3, 0]]
+
+
 
 
          

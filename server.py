@@ -3,8 +3,14 @@ import sys, socket, select
 HOST = '' 
 SOCKET_LIST = []
 players_dict = {}
+answers_dict = {}
 RECV_BUFFER = 4096 
 PORT = 9009
+OPTIONS = {
+    'rock' : 0,
+    'paper' : 1,
+    'scissors' : 2
+}
 
 def game_server():
 
@@ -16,7 +22,7 @@ def game_server():
     # add server socket object to the list of readable connections
     SOCKET_LIST.append(server_socket)
  
-    print "Jan-ken-Po!\nChoose among stone, paper and scissors:" + str(PORT)
+    print "Jan-ken-Po!\nChoose among rock, paper and scissors:" + str(PORT)
  
     while 1:
 
@@ -49,11 +55,25 @@ def game_server():
                     # receiving data from the socket.
                     data = sock.recv(RECV_BUFFER)
                     if data:
-                        # there is something in the socket
-                        #print players_dict
-                        print "addr %s player %s " % ((sock), players_dict[sock])
-                        if players_dict[sock] < 3:
-                        	broadcast(server_socket, sock, "\r" + '[teste' + str(sock.getpeername()) + '] ' + data)  
+                        option = parse_response(data)
+                        check = option in OPTIONS.keys()
+                        
+                        if(check_option(option) and players_dict[sock] < 3):
+                            # there is something in the socket
+                            #print players_dict
+                            answers_dict[players_dict[sock]] = OPTIONS[option]
+                            answers = get_answers_list(answers_dict)
+                            print "addr %s player %s " % ((sock), players_dict[sock])
+
+                            if(len(answers) == 2):
+                                print check_result(answers)
+                                answers_dict.clear()
+                            broadcast(server_socket, sock, "\r" + '[teste' + str(sock.getpeername()) + '] ' + data)
+                        elif(players_dict[sock] >= 3):
+                            # Spectators do not play, they just watch the game
+                            pass
+                        else:
+                            broadcast(server_socket, sock, "\r" + '[teste' + str(sock.getpeername()) + '] ' + 'invalid option! Choose another!')   
                     else:
                         # remove the socket that's broken    
                         if sock in SOCKET_LIST:
@@ -63,7 +83,9 @@ def game_server():
                         broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr) 
 
                 # exception 
-                except:
+                except Exception as e:
+                    print e
+                    print "Deu ruim!"
                     broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
                     continue
 
@@ -83,30 +105,34 @@ def broadcast (server_socket, sock, message):
                 if socket in SOCKET_LIST:
                     SOCKET_LIST.remove(socket)
 
+def check_result(answers):
+    result_table = [[-1, 1, 0], [1, -1, 2], [0, 2, -1]]
+    print result_table
+    op1, op2 = answers
+    winner_option_value = result_table[op1][op2]
+    if winner_option_value == -1:
+        return 'Draw Game'
+    else:
+        winner_option_index = OPTIONS.values().index(winner_option_value)
+        winner_option = OPTIONS.keys()[winner_option_index]
+        return "Winner is %s\n" % winner_option
 
-def find_position(item, items_list):
-	index = 0
-	for it in items_list:
-		if item == it:
-			break
-		index += 1
-	return index
+def parse_response(data):
+    parsed_data = data.split('\n')[0]
+    return parsed_data
+
+def check_option(option):
+    if option in OPTIONS.keys():
+        return True
+    else:
+        return False
+
+def get_answers_list(answers_dict):
+    answers = []
+    for op in answers_dict.values():
+        answers.append(op)
+    return answers
  
 if __name__ == "__main__":
 
     sys.exit(game_server())
-
-
-options = {
-    'pedra' : {
-        'pedra' : 'empate',
-        'papel' : '' 
-    }
-}
-
-result = [[0, 2, 1], [2, 0, 3], [1, 3, 0]]
-
-
-
-
-         

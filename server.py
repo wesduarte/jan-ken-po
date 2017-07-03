@@ -38,8 +38,6 @@ def game_server():
                 SOCKET_LIST.append(sockfd)
                 player_number = len(SOCKET_LIST)-1
                 players_dict[sockfd] = player_number
-                print players_dict
-                print SOCKET_LIST
                 
                 if(len(players_dict) < 3):
                     print "Player %s connected" % (player_number)
@@ -59,25 +57,27 @@ def game_server():
                         check = option in OPTIONS.keys()
                         
                         if(check_option(option) and players_dict[sock] < 3):
-                            # there is something in the socket
-                            #print players_dict
                             answers_dict[players_dict[sock]] = OPTIONS[option]
                             answers = get_answers_list(answers_dict)
-                            print "addr %s player %s " % ((sock), players_dict[sock])
 
+                            broadcast(server_socket, sock, "\r" + "player " + "%s"%players_dict[sock] + " " + str(sock.getpeername()) + '] ' + data)
                             if(len(answers) == 2):
                                 print check_result(answers)
+                                broadcast(server_socket, server_socket, check_result(answers))
                                 answers_dict.clear()
-                            broadcast(server_socket, sock, "\r" + '[teste' + str(sock.getpeername()) + '] ' + data)
+
                         elif(players_dict[sock] >= 3):
                             # Spectators do not play, they just watch the game
                             pass
                         else:
-                            broadcast(server_socket, sock, "\r" + '[teste' + str(sock.getpeername()) + '] ' + 'invalid option! Choose another!')   
+                            broadcast(server_socket, sock, "\r" + str(sock.getpeername()) + '] ' + 'invalid option! Choose another!')   
                     else:
                         # remove the socket that's broken    
                         if sock in SOCKET_LIST:
+                            players_dict.pop(sock, None)
                             SOCKET_LIST.remove(sock)
+
+                        update_players_number(players_dict)
 
                         # at this stage, no data means probably the connection has been broken
                         broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr) 
@@ -85,7 +85,8 @@ def game_server():
                 # exception 
                 except Exception as e:
                     print e
-                    print "Deu ruim!"
+                    players_dict.pop(sock, None)
+                    update_players_number(players_dict)
                     broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
                     continue
 
@@ -107,7 +108,6 @@ def broadcast (server_socket, sock, message):
 
 def check_result(answers):
     result_table = [[-1, 1, 0], [1, -1, 2], [0, 2, -1]]
-    print result_table
     op1, op2 = answers
     winner_option_value = result_table[op1][op2]
     if winner_option_value == -1:
@@ -132,7 +132,14 @@ def get_answers_list(answers_dict):
     for op in answers_dict.values():
         answers.append(op)
     return answers
+
+def update_players_number(players_number_dict):
+    for i in range(1, len(SOCKET_LIST)):
+        sock = SOCKET_LIST[i]
+        players_number_dict[sock] = i
  
 if __name__ == "__main__":
 
     sys.exit(game_server())
+
+

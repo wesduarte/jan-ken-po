@@ -72,7 +72,7 @@ def game_server():
                             # Spectators do not play, they just watch the game
                             pass
                         else:
-                            broadcast(server_socket, sock, "\r" + str(sock.getpeername()) + '] ' + 'invalid option! Choose another!')   
+                            sock.send('invalid option! Choose another!\n')   
                     else:
                         # remove the socket that's broken    
                         if sock in SOCKET_LIST:
@@ -113,13 +113,13 @@ def check_result(answers):
     op1, op2 = answers
     winner_option_value = result_table[op1][op2]
     if winner_option_value == -1:
-        return 'Draw Game!'
+        return 'Draw Game!\n'
     else:
         winner_option_index = OPTIONS.values().index(winner_option_value)
         winner_option = OPTIONS.keys()[winner_option_index]
         winner_player_index = answers_dict.values().index(winner_option_value)
         winner_player = answers_dict.keys()[winner_player_index]
-        return "Winner is player %s with option %s\n !" % (winner_player, winner_option)
+        return "Winner is player %s with option %s!\n" % (winner_player, winner_option)
 
 def parse_response(data):
     parsed_data = data.split('\n')[0]

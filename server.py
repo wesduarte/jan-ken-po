@@ -55,18 +55,20 @@ def game_server():
                     if data:
                         option = parse_response(data)
                         check = option in OPTIONS.keys()
-                        
-                        if(check_option(option) and players_dict[sock] < 3):
-                            answers_dict[players_dict[sock]] = OPTIONS[option]
-                            answers = get_answers_list(answers_dict)
 
-                            broadcast(server_socket, sock, "\r" + "player " + "%s"%players_dict[sock] + " " + str(sock.getpeername()) + '] ' + data)
+                        player_number = players_dict[sock]
+                        
+                        if(check_option(option) and player_number < 3):
+                            answers_dict[player_number] = OPTIONS[option]
+                            answers = answers_dict.values()
+
+                            broadcast(server_socket, sock, "\r" + "player " + "%s"%player_number + " " + str(sock.getpeername()) + '] ' + data)
                             if(len(answers) == 2):
                                 print check_result(answers)
                                 broadcast(server_socket, server_socket, check_result(answers))
                                 answers_dict.clear()
 
-                        elif(players_dict[sock] >= 3):
+                        elif(player_number >= 3):
                             # Spectators do not play, they just watch the game
                             pass
                         else:
@@ -111,11 +113,13 @@ def check_result(answers):
     op1, op2 = answers
     winner_option_value = result_table[op1][op2]
     if winner_option_value == -1:
-        return 'Draw Game'
+        return 'Draw Game!'
     else:
         winner_option_index = OPTIONS.values().index(winner_option_value)
         winner_option = OPTIONS.keys()[winner_option_index]
-        return "Winner is %s\n" % winner_option
+        winner_player_index = answers_dict.values().index(winner_option_value)
+        winner_player = answers_dict.keys()[winner_player_index]
+        return "Winner is player %s with option %s\n !" % (winner_player, winner_option)
 
 def parse_response(data):
     parsed_data = data.split('\n')[0]
@@ -126,12 +130,6 @@ def check_option(option):
         return True
     else:
         return False
-
-def get_answers_list(answers_dict):
-    answers = []
-    for op in answers_dict.values():
-        answers.append(op)
-    return answers
 
 def update_players_number(players_number_dict):
     for i in range(1, len(SOCKET_LIST)):

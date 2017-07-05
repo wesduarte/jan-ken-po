@@ -62,8 +62,16 @@ def game_server():
                             if(check_option(option) and player_number < 3):
                                 answers_dict[player_number] = OPTIONS[option]
                                 answers = answers_dict.values()
+                                current_player = "Player %s" % player_number
+                                cast_message = "[%s] - %s did his cast\n" % (str(sock.getpeername()), current_player)
+                                broadcast(server_socket, sock, cast_message)
+                                for player_number in players_dict.values():
+                                    if player_number > 2:
+                                        spectator_index = players_dict.values().index(player_number)
+                                        spectator = players_dict.keys()[spectator_index]
+                                        private_cast_message = "%s choose %s" % (current_player, data)
+                                        spectator.send(private_cast_message)
 
-                                broadcast(server_socket, sock, "\r" + "player " + "%s"%player_number + " " + str(sock.getpeername()) + '] ' + data)
                                 if(len(answers) == 2):
                                     print check_result(answers)
                                     broadcast(server_socket, server_socket, check_result(answers))

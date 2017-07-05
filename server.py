@@ -41,10 +41,10 @@ def game_server():
                 
                 if(len(players_dict) < 3):
                     print "Player %s connected" % (player_number)
-                    broadcast(server_socket, sockfd, "Player %s entered our chatting room\n" % (player_number))
+                    broadcast(server_socket, sockfd, "Player %s entered\n" % (player_number))
                 else:
                     print "Spectator %s connected" % (4-player_number)
-                    broadcast(server_socket, sockfd, "Spectator %s entered our chatting room\n" % (4-player_number))
+                    broadcast(server_socket, sockfd, "Spectator %s entered\n" % (4-player_number))
              
             # a message from a client, not a new connection
             else:
@@ -52,37 +52,40 @@ def game_server():
                 try:
                     # receiving data from the socket.
                     data = sock.recv(RECV_BUFFER)
-                    if data:
-                        option = parse_response(data)
-                        check = option in OPTIONS.keys()
+                    if len(players_dict.values()) > 2:
+                        if data:
+                            option = parse_response(data)
+                            check = option in OPTIONS.keys()
 
-                        player_number = players_dict[sock]
-                        
-                        if(check_option(option) and player_number < 3):
-                            answers_dict[player_number] = OPTIONS[option]
-                            answers = answers_dict.values()
+                            player_number = players_dict[sock]
+                            
+                            if(check_option(option) and player_number < 3):
+                                answers_dict[player_number] = OPTIONS[option]
+                                answers = answers_dict.values()
 
-                            broadcast(server_socket, sock, "\r" + "player " + "%s"%player_number + " " + str(sock.getpeername()) + '] ' + data)
-                            if(len(answers) == 2):
-                                print check_result(answers)
-                                broadcast(server_socket, server_socket, check_result(answers))
-                                answers_dict.clear()
+                                broadcast(server_socket, sock, "\r" + "player " + "%s"%player_number + " " + str(sock.getpeername()) + '] ' + data)
+                                if(len(answers) == 2):
+                                    print check_result(answers)
+                                    broadcast(server_socket, server_socket, check_result(answers))
+                                    answers_dict.clear()
 
-                        elif(player_number >= 3):
-                            # Spectators do not play, they just watch the game
-                            pass
+                            elif(player_number >= 3):
+                                # Spectators do not play, they just watch the game
+                                pass
+                            else:
+                                sock.send('invalid option! Choose another!\n')
                         else:
-                            sock.send('invalid option! Choose another!\n')   
+                            # remove the socket that's broken    
+                            if sock in SOCKET_LIST:
+                                players_dict.pop(sock, None)
+                                SOCKET_LIST.remove(sock)
+
+                            update_players_number(players_dict)
+
+                            # at this stage, no data means probably the connection has been broken
+                            broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr) 
                     else:
-                        # remove the socket that's broken    
-                        if sock in SOCKET_LIST:
-                            players_dict.pop(sock, None)
-                            SOCKET_LIST.remove(sock)
-
-                        update_players_number(players_dict)
-
-                        # at this stage, no data means probably the connection has been broken
-                        broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr) 
+                        sock.send('Waiting for spectators!\n')
 
                 # exception 
                 except Exception as e:
@@ -94,7 +97,7 @@ def game_server():
 
     server_socket.close()
     
-# broadcast chat messages to all connected clients
+# broadcast game messages to all connected clients
 def broadcast (server_socket, sock, message):
     for socket in SOCKET_LIST:
         # send the message only to peer

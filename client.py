@@ -32,7 +32,7 @@ def player_client():
                 # incoming message from remote server, s
                 data = sock.recv(4096)
                 if not data :
-                    print '\nDisconnected from chat server'
+                    print '\nDisconnected from game server'
                     sys.exit()
                 else :
                     #print data
